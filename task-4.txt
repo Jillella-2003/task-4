@@ -1,0 +1,97 @@
+// === MainActivity.kt ===
+package com.example.task4app
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
+import android.os.Build
+import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var sharedPref: SharedPreferences
+    private val CHANNEL_ID = "task4_channel"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        sharedPref = getSharedPreferences("loginPrefs", Context.MODE_PRIVATE)
+
+        val username = findViewById<EditText>(R.id.editUsername)
+        val password = findViewById<EditText>(R.id.editPassword)
+        val loginBtn = findViewById<Button>(R.id.buttonLogin)
+
+        createNotificationChannel()
+
+        loginBtn.setOnClickListener {
+            val user = username.text.toString()
+            val pass = password.text.toString()
+
+            if (user == "admin" && pass == "admin") {
+                sharedPref.edit().putBoolean("loggedIn", true).apply()
+                sendNotification(user)
+                startActivity(Intent(this, DashboardActivity::class.java))
+                finish()
+            } else {
+                Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun sendNotification(username: String) {
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Login Successful")
+            .setContentText("Welcome, $username!")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+        NotificationManagerCompat.from(this).notify(1, builder.build())
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "LoginChannel"
+            val descriptionText = "Channel for login notification"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(CHANNEL_ID, name, importance)
+            channel.description = descriptionText
+
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+}
+
+// === DashboardActivity.kt ===
+package com.example.task4app
+
+import android.content.Intent
+import android.os.Bundle
+import android.widget.Button
+import androidx.appcompat.app.AppCompatActivity
+
+class DashboardActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_dashboard)
+
+        val logoutBtn = findViewById<Button>(R.id.buttonLogout)
+        logoutBtn.setOnClickListener {
+            getSharedPreferences("loginPrefs", MODE_PRIVATE)
+                .edit().clear().apply()
+
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+        }
+    }
+}
